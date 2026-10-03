@@ -1,0 +1,117 @@
+{% extends "core/base_app.html" %}{% load ui %}
+{% block title %}{{ student.full_name }}, {{ record.session }} | EarlySignal NG{% endblock %}
+{% block content %}
+<nav class="crumbs" aria-label="Breadcrumb"><a href="{% url 'student_list' %}">Students</a>{% icon "chevron" 14 %}<a href="{% url 'student_detail' student.pk %}">{{ student.full_name }}</a>{% icon "chevron" 14 %}<span>{{ record.session }} {{ record.get_semester_display|lower }}</span></nav>
+<div class="page-head">
+  <div><h1>{{ student.full_name }}</h1><p>{{ record.session }} {{ record.get_semester_display|lower }}. {{ student.level }}, {{ student.department }}, {{ student.institution }}.</p></div>
+  <div class="page-actions no-print">
+    {% if prediction %}<button class="btn btn-ghost" type="button" onclick="window.print()">{% icon "download" 18 %}Print</button>{% endif %}
+    {% if user.is_administrator %}
+    <a class="btn btn-ghost" href="{% url 'record_edit' record.pk %}">{% icon "edit" 18 %}Correct record</a>
+    <button class="btn btn-danger" type="button" data-confirm="confirm-delete">{% icon "trash" 18 %}Delete</button>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid grid-main enter">
+  <div class="stack">
+    {% if prediction %}
+    <section class="card" aria-labelledby="h-signal" data-risk="{{ prediction.risk_category|lower }}">
+      <div class="signal">
+        <div>
+          <div class="gauge" role="img" aria-label="{{ prediction.percent }} percent chance of under-performing">
+            <svg viewBox="0 0 200 112"><path class="gauge-track" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke-width="16" stroke-linecap="round"/><path class="gauge-fill" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke-width="16" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3" data-offset="{{ gauge_offset }}"/></svg>
+            <div class="gauge-num num">{{ prediction.percent }}<small>%</small></div>
+          </div>
+          <div class="gauge-scale" style="width:220px;margin-inline:auto"><span>0</span><span>chance of under-performing</span><span>100</span></div>
+        </div>
+        <div class="signal-text">
+          {% risk_badge prediction.risk_category "lg" %}
+          <h2 id="h-signal">{{ prediction.predicted_outcome }}</h2>
+          <p>{% if prediction.risk_category == "High" %}More likely than not to end the semester below a pass average. Worth a conversation now.{% elif prediction.risk_category == "Medium" %}Riskier than a typical student, though still more likely to pass than not. A check-in is worth the time.{% else %}The indicators look like records that ended the semester above a pass average.{% endif %}</p>
+          {% if evidence %}<p class="help" style="margin-top:8px">When the model was tested, {{ evidence.pct }}% of the {{ evidence.n }} students it placed in this band went on to under-perform.</p>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    {% for note in cautions %}<div class="banner banner-warn" style="margin:0">{% icon "alert" %}<span>{{ note }}</span></div>{% endfor %}
+    <section class="card" aria-labelledby="h-why">
+      <div class="card-head"><h2 id="h-why">Why the model says this</h2><p>Starting point: {{ baseline_pct }}%. This record: {{ prediction.percent }}%.</p></div>
+      <ul class="factors">
+        {% for f in factors %}
+        <li class="factor {{ f.direction }}" style="--w:{{ f.width }}">
+          <div class="factor-top"><span><strong>{{ f.label }}</strong> <span>at {{ f.value|floatformat:"-1" }}%</span></span><em>{% if f.direction == "raises" %}raises risk by {{ f.points|absolute }} pts{% elif f.direction == "lowers" %}lowers risk by {{ f.points|absolute }} pts{% else %}no real effect{% endif %}</em></div>
+          <div class="factor-track"><span class="factor-bar"></span></div>
+        </li>
+        {% endfor %}
+      </ul>
+      <div class="factor-key"><span>Lowers risk</span><span>Raises risk</span></div>
+      <p class="help" style="margin-top:14px">Each bar is that indicator's share of the gap between the model's starting point and this record's estimate. The three shares add up to the gap exactly. They show what moved the estimate, not what caused the student's situation.</p>
+    </section>
+
+    <section class="card" aria-labelledby="h-advice">
+      <div class="card-head"><h2 id="h-advice">Suggested next steps</h2></div>
+      <ul class="advice">{% for a in advice %}<li>{% icon "arrow" 18 %}<span>{{ a }}</span></li>{% endfor %}</ul>
+      <p class="help" style="margin-top:14px">These are prompts for your own judgement. The prediction is an estimate, not an official result.</p>
+    </section>
+
+    {% if model_ready %}
+    <section class="card no-print" aria-labelledby="h-whatif">
+      <div class="card-head"><h2 id="h-whatif">What would move the signal?</h2><p>Nothing here is saved</p></div>
+      {% include "core/_predictor.html" with pid="whatif" ca=record.ca_score|floatformat:0 att=record.attendance_rate|floatformat:0 gpa=record.previous_gpa scale=student.gpa_scale fixed_scale=True %}
+    </section>
+    {% endif %}
+
+    {% else %}
+    <section class="card empty">
+      <span class="empty-art">{% icon "spark" 26 %}</span>
+      <h3>No prediction for this record yet</h3>
+      <p>The record is saved. Request a prediction to see the risk band and what is driving it.</p>
+      <form method="post" action="{% url 'record_predict' record.pk %}" data-busy>{% csrf_token %}<button class="btn" type="submit" {% if not model_ready %}disabled{% endif %}>{% icon "spark" 18 %}Request prediction</button></form>
+    </section>
+    {% endif %}
+  </div>
+
+  <div class="stack">
+    <section class="card" aria-labelledby="h-ind">
+      <div class="card-head"><h2 id="h-ind">Recorded indicators</h2></div>
+      <dl class="facts">
+        <div><dt>CA score</dt><dd class="big">{{ record.ca_score|floatformat:"-1" }}%</dd></div>
+        <div><dt>Attendance</dt><dd class="big">{{ record.attendance_rate|floatformat:"-1" }}%{% if record.attendance_rate < requirement %}<span class="flag-low">Below {{ requirement }}%</span>{% endif %}</dd></div>
+        <div><dt>Previous GPA</dt><dd class="big">{{ record.previous_gpa }}<small class="muted" style="font-size:.9rem;font-family:var(--font-text)"> / {{ student.gpa_scale|floatformat:2 }}</small></dd></div>
+      </dl>
+    </section>
+    <section class="card" aria-labelledby="h-trace">
+      <div class="card-head"><h2 id="h-trace">Audit trail</h2></div>
+      <dl class="facts">
+        <div><dt>Student ID</dt><dd>{{ student.student_id }}</dd></div>
+        <div><dt>Entered by</dt><dd>{{ record.entered_by.display_name|default:"Unknown" }}</dd></div>
+        <div><dt>Entered on</dt><dd>{{ record.created_at|date:"j M Y" }}</dd></div>
+        {% if record.corrected_at %}
+        <div><dt>Corrected by</dt><dd>{{ record.corrected_by.display_name|default:"Unknown" }}</dd></div>
+        <div><dt>Corrected on</dt><dd>{{ record.corrected_at|date:"j M Y, H:i" }}</dd></div>
+        {% endif %}
+        {% if prediction %}
+        <div><dt>Predicted on</dt><dd>{{ prediction.date_generated|date:"j M Y, H:i" }}</dd></div>
+        <div><dt>Requested by</dt><dd>{{ prediction.requested_by.display_name|default:"Unknown" }}</dd></div>
+        <div><dt>Model</dt><dd>{{ prediction.model_name }}</dd></div>
+        <div><dt>Model version</dt><dd>{{ prediction.model_version }}</dd></div>
+        {% endif %}
+      </dl>
+      {% if superseded %}<p class="help" style="margin-top:14px">Before the correction this record read CA {{ superseded.ca_score }}%, attendance {{ superseded.attendance_rate }}%, previous GPA {{ superseded.previous_gpa }}, and the prediction made on {{ superseded.date }} was {{ superseded.percent }}% ({{ superseded.risk }} risk).</p>{% endif %}
+      {% if prediction %}<form method="post" action="{% url 'record_predict' record.pk %}" class="no-print" style="margin-top:16px" data-busy>{% csrf_token %}<button class="btn btn-ghost btn-sm" type="submit">{% icon "refresh" 16 %}Run the prediction again</button></form>{% endif %}
+    </section>
+  </div>
+</div>
+
+{% if user.is_administrator %}
+<dialog class="confirm" id="confirm-delete" aria-labelledby="dlg-title">
+  <h2 id="dlg-title">Delete this record?</h2>
+  <p class="muted">The record and its prediction will be removed from the history. This cannot be undone.</p>
+  <form method="post" action="{% url 'record_delete' record.pk %}" class="form-actions">{% csrf_token %}
+    <button class="btn btn-danger" type="submit">Delete record</button>
+    <button class="btn btn-ghost" type="button" data-cancel>Keep it</button>
+  </form>
+</dialog>
+{% endif %}
+{% endblock %}

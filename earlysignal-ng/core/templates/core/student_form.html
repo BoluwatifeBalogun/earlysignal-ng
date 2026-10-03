@@ -1,0 +1,27 @@
+{% extends "core/base_app.html" %}{% load ui %}
+{% block title %}{{ title }} | EarlySignal NG{% endblock %}
+{% block content %}
+<nav class="crumbs" aria-label="Breadcrumb"><a href="{% url 'student_list' %}">Students</a>{% icon "chevron" 14 %}{% if student %}<a href="{% url 'student_detail' student.pk %}">{{ student.full_name }}</a>{% icon "chevron" 14 %}{% endif %}<span>{{ title }}</span></nav>
+<div class="page-head"><div><h1>{{ title }}</h1><p>The institution and state place the student in a geopolitical zone. The institution type sets the GPA scale.</p></div></div>
+<form class="card" method="post" novalidate data-busy style="max-width:820px">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="form-errors" role="alert">{% icon "alert" %}<span>{{ form.non_field_errors.0 }}</span></div>{% endif %}
+  <div class="form-grid cols-2">
+    {% include "core/_field.html" with field=form.full_name %}
+    {% include "core/_field.html" with field=form.student_id %}
+    <div class="span-2">{% include "core/_field.html" with field=form.institution %}</div>
+    {% include "core/_field.html" with field=form.institution_type %}
+    {% include "core/_field.html" with field=form.state %}
+    {% include "core/_field.html" with field=form.department %}
+    {% include "core/_field.html" with field=form.level %}
+  </div>
+  <datalist id="institution-list">{% for i in institutions %}<option value="{{ i }}">{% endfor %}</datalist>
+  <datalist id="department-list">{% for d in departments %}<option value="{{ d }}">{% endfor %}</datalist>
+  {{ institution_lookup|json_script:"institution-lookup" }}
+  {{ levels_by_type|json_script:"levels-by-type" }}
+  <div class="form-actions">
+    <button class="btn" type="submit">{% if student %}Save changes{% else %}Add student{% endif %}</button>
+    <a class="btn btn-ghost" href="{% if student %}{% url 'student_detail' student.pk %}{% else %}{% url 'student_list' %}{% endif %}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

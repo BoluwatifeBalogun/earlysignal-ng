@@ -1,0 +1,37 @@
+{% extends "core/base_app.html" %}{% load ui %}
+{% block title %}User accounts | EarlySignal NG{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>User accounts</h1><p>Lecturers and advisers enter records and request predictions. Administrators also manage accounts, correct records and retrain the model.</p></div></div>
+<div class="grid grid-main">
+  <section class="card card-flush" aria-labelledby="h-users">
+    <div class="card-head" style="padding-bottom:16px"><h2 id="h-users">{{ users|length }} account{{ users|length|pluralize }}</h2></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th scope="col">User</th><th scope="col">Role</th><th scope="col" class="right">Records</th><th scope="col" class="right">Predictions</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Manage</span></th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td><div class="who"><span class="avatar avatar-soft" aria-hidden="true">{{ u.initials }}</span><span><strong>{{ u.display_name }}</strong><span class="cell-sub">{{ u.username }}{% if u.pk == user.pk %} (you){% endif %}</span></span></div></td>
+          <td>{{ u.get_role_display }}</td>
+          <td class="right num">{{ u.n_records }}</td>
+          <td class="right num">{{ u.n_predictions }}</td>
+          <td>{% if u.is_active %}<span class="pill">Active</span>{% else %}<span class="pill pill-off">Deactivated</span>{% endif %}</td>
+          <td class="right"><a class="btn btn-ghost btn-sm" href="{% url 'user_edit' u.pk %}" aria-label="Manage {{ u.username }}">Manage</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+  <form class="card" method="post" novalidate data-busy aria-labelledby="h-new">
+    {% csrf_token %}
+    <div class="card-head"><h2 id="h-new">Create an account</h2></div>
+    <div class="form-grid">
+      {% include "core/_field.html" with field=form.username %}
+      <div class="form-grid cols-2">{% include "core/_field.html" with field=form.first_name %}{% include "core/_field.html" with field=form.last_name %}</div>
+      {% include "core/_field.html" with field=form.email %}
+      {% include "core/_field.html" with field=form.role %}
+      {% include "core/_field.html" with field=form.password %}
+    </div>
+    <div class="form-actions"><button class="btn" type="submit">{% icon "plus" 18 %}Create account</button></div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,189 @@
+{% extends "core/base.html" %}{% load ui humanize %}
+{% block title %}EarlySignal NG | Student performance prediction for Nigerian institutions{% endblock %}
+{% block body_class %}landing{% endblock %}
+{% block body %}
+<header class="site-nav">
+  <a href="{% url 'landing' %}" aria-label="EarlySignal NG home">{% include "core/_logo.html" %}</a>
+  <nav class="site-links" aria-label="Sections">
+    <a href="#how">How it works</a>
+    <a href="#evidence">The evidence</a>
+    <a href="#coverage">Coverage</a>
+    <a href="#roles">Who uses it</a>
+  </nav>
+  {% if user.is_authenticated %}<a class="btn btn-dark btn-sm" href="{% url 'dashboard' %}">Open dashboard</a>
+  {% else %}<a class="btn btn-dark btn-sm" href="{% url 'login' %}">Sign in</a>{% endif %}
+</header>
+
+<main id="main">
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="hero-kicker"><i></i>For universities, polytechnics and colleges of education</span>
+      <h1>
+        <span class="line"><span style="--i:0">Know who needs</span></span>
+        <span class="line"><span style="--i:1">help before the</span></span>
+        <span class="line"><span style="--i:2">results say so.</span></span>
+      </h1>
+      <p class="hero-lede">EarlySignal NG reads three figures every Nigerian institution already keeps: continuous assessment, attendance and the last GPA. It tells a lecturer which students are likely to under-perform while there is still a semester left to act.</p>
+      <div class="hero-cta">
+        <a class="btn btn-lg btn-shimmer" href="{% url 'login' %}">Sign in to the system{% icon "arrow" 18 %}</a>
+        <a class="btn btn-lg btn-ghost" href="#evidence">See how it was tested</a>
+      </div>
+      {% if metrics %}
+      <div class="hero-proof">
+        <div><strong class="num"><span data-ticker="{% widthratio selected.test.accuracy 1 100 %}">0</span>%</strong><span>accuracy on unseen records</span></div>
+        <div><strong class="num"><span data-ticker="{% widthratio selected.test.recall 1 100 %}">0</span>%</strong><span>of struggling students caught</span></div>
+        <div><strong class="num"><span data-ticker="{{ metrics.data.rows_used }}">0</span></strong><span>records behind the model</span></div>
+      </div>
+      {% endif %}
+    </div>
+    <div class="beam" data-reveal>
+      <div class="demo-card">
+        <div class="demo-head">
+          <h2>Try the model</h2>
+          <span class="live"><i></i>Live</span>
+        </div>
+        {% if model_ready %}
+          {% include "core/_predictor.html" with pid="demo" ca=48 att=71 gpa="2.20" scale=4 %}
+          <p class="demo-foot">This runs the deployed {{ metrics.selected }} model. Nothing you enter here is stored.</p>
+        {% else %}
+          <p class="muted">The model has not been trained on this server yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="marquee">
+  <p class="sr-only">Covers institutions in all 36 states and the Federal Capital Territory.</p>
+  <div class="marquee-track" aria-hidden="true">
+    {% for zone, states in zones.items %}{% for s in states %}<span>{{ s }}</span>{% endfor %}{% endfor %}
+    {% for zone, states in zones.items %}{% for s in states %}<span>{{ s }}</span>{% endfor %}{% endfor %}
+  </div>
+</div>
+
+<section class="section" id="how">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <h2>From a result sheet to a conversation, in four steps.</h2>
+      <p>Most intervention starts after a poor result is already on the transcript. This moves it to the middle of the semester.</p>
+    </div>
+    <ol class="steps" style="list-style:none;padding:0;margin:0">
+      <li class="step" data-reveal style="--i:0"><h3>Record</h3><p>Enter a student's CA score, attendance and previous GPA, or import a whole class from a spreadsheet.</p></li>
+      <li class="step" data-reveal style="--i:1"><h3>Predict</h3><p>The trained model estimates the chance that the student under-performs this semester and places them in a low, medium or high risk band.</p></li>
+      <li class="step" data-reveal style="--i:2"><h3>Explain</h3><p>Every prediction shows how much each of the three figures pushed the estimate up or down, in plain words.</p></li>
+      <li class="step" data-reveal style="--i:3"><h3>Act</h3><p>The lecturer decides what happens next. Each prediction stays in the history so progress can be reviewed after the next CA.</p></li>
+    </ol>
+  </div>
+</section>
+
+{% if metrics %}
+<section class="section section-tint" id="evidence">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <h2>Tested the way the write-up promised.</h2>
+      <p>Two models were trained on the same records and scored on a fifth of the data that neither had seen. The better one is deployed.</p>
+    </div>
+    <div class="bento">
+      <article class="tile tile-dark b-3" data-reveal>
+        <p class="tile-big num"><span data-ticker="{% widthratio selected.test.accuracy 1 1000 %}" data-decimals="0">0</span><small> in 1,000</small></p>
+        <h3>Predictions that matched what happened</h3>
+        <p>{{ metrics.selected }} against the Logistic Regression baseline, on {{ metrics.data.test_rows|intcomma }} held-out records.</p>
+        <div class="compare" role="img" aria-label="Accuracy: Random Forest {% widthratio metrics.models|dictget:'Random Forest' 1 100 %} percent, Logistic Regression {% widthratio metrics.models|dictget:'Logistic Regression' 1 100 %} percent">
+          <div class="compare-row"><span>Random Forest</span><div class="compare-bar"><span style="--v:{% widthratio metrics.models|dictget:'Random Forest' 1 100 %}"></span></div><b>{% widthratio metrics.models|dictget:'Random Forest' 1 100 %}%</b></div>
+          <div class="compare-row"><span>Logistic Reg.</span><div class="compare-bar alt"><span style="--v:{% widthratio metrics.models|dictget:'Logistic Regression' 1 100 %}"></span></div><b>{% widthratio metrics.models|dictget:'Logistic Regression' 1 100 %}%</b></div>
+        </div>
+      </article>
+      <article class="tile b-3" data-reveal style="--i:1">
+        <p class="tile-big num" style="color:var(--green-600)"><span data-ticker="{{ selected.confusion.tp }}">0</span><small style="color:var(--ink)"> of {{ selected.confusion.tp|add:selected.confusion.fn }}</small></p>
+        <h3>Struggling students caught early</h3>
+        <p>Missing a student who needs help costs more than a false alarm, so the model is tuned to favour recall. It missed {{ selected.confusion.fn }} and raised {{ selected.confusion.fp }} alarms that turned out not to be needed.</p>
+      </article>
+      <article class="tile b-2" data-reveal>
+        <h3>Never a black box</h3>
+        <p>A lecturer sees why a student was flagged, not just a score.</p>
+        <ul class="factors mini-factors" aria-hidden="true">
+          <li class="factor raises" style="--w:100"><div class="factor-top"><strong>Attendance</strong><em>raises risk</em></div><div class="factor-track"><span class="factor-bar"></span></div></li>
+          <li class="factor raises" style="--w:46"><div class="factor-top"><strong>CA</strong><em>raises risk</em></div><div class="factor-track"><span class="factor-bar"></span></div></li>
+          <li class="factor lowers" style="--w:38"><div class="factor-top"><strong>Previous result</strong><em>lowers risk</em></div><div class="factor-track"><span class="factor-bar"></span></div></li>
+        </ul>
+      </article>
+      <article class="tile b-2" data-reveal style="--i:1">
+        <h3>One model, both grading scales</h3>
+        <p>Polytechnic and university GPAs are read on their own scale, then compared on equal terms.</p>
+        <div class="scale-pair"><div><strong>4.00</strong><span>Polytechnics (NBTE)</span></div><div><strong>5.00</strong><span>Universities and colleges of education</span></div></div>
+      </article>
+      <article class="tile b-2" data-reveal style="--i:2">
+        <h3>Names stay out of the model</h3>
+        <p>Training uses reference codes and three numbers. Access needs an account, and only administrators can correct records or manage users.</p>
+        <p style="margin-top:18px"><span class="pill">{% icon "lock" 14 %}Role-based access</span></p>
+      </article>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="section" id="coverage">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <h2>Built for the whole country, not one department.</h2>
+      <p>Every student record carries its institution and state, so results roll up by geopolitical zone and by institution type.</p>
+    </div>
+    <div class="zone-grid" data-reveal>
+      {% for zone, states in zones.items %}
+      <div class="zone"><strong>{{ zone }}</strong><span>{{ states|join:", " }}</span></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section section-tint" id="roles">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <h2>Two kinds of account.</h2>
+      <p>The system supports the adviser's judgement. It does not replace it, and it never sets a grade.</p>
+    </div>
+    <div class="roles">
+      <article class="role" data-reveal>
+        <span class="role-icon">{% icon "students" 24 %}</span>
+        <h3>Lecturer or academic adviser</h3>
+        <ul>
+          <li>{% icon "tick" 18 %}<span>Add students and enter academic records</span></li>
+          <li>{% icon "tick" 18 %}<span>Import a class list from CSV</span></li>
+          <li>{% icon "tick" 18 %}<span>Request predictions and read the explanation</span></li>
+          <li>{% icon "tick" 18 %}<span>Review and export the prediction history</span></li>
+        </ul>
+      </article>
+      <article class="role" data-reveal style="--i:1">
+        <span class="role-icon">{% icon "shield" 24 %}</span>
+        <h3>Administrator</h3>
+        <ul>
+          <li>{% icon "tick" 18 %}<span>Everything a lecturer can do</span></li>
+          <li>{% icon "tick" 18 %}<span>Create accounts, reset passwords, deactivate users</span></li>
+          <li>{% icon "tick" 18 %}<span>Correct or delete erroneous records</span></li>
+          <li>{% icon "tick" 18 %}<span>Retrain the model when new data arrives</span></li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<div class="wrap" style="padding-top:84px">
+  <section class="cta" data-reveal>
+    <h2>The data is already in the registry. Put it to work.</h2>
+    <p>Sign in with a lecturer or administrator account to enter records and see the first predictions.</p>
+    <a class="btn btn-lg btn-white" href="{% url 'login' %}">Sign in{% icon "arrow" 18 %}</a>
+  </section>
+</div>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div>
+      {% include "core/_logo.html" %}
+      <p>An AI-based student performance prediction system for Nigerian tertiary institutions. Built as an HND seminar project, Department of Computer Science, Yaba College of Technology.</p>
+    </div>
+    <p>Predictions are indicative estimates that support academic advising. They are not official results. The bundled demonstration data is synthetic.</p>
+  </div>
+</footer>
+{% endblock %}

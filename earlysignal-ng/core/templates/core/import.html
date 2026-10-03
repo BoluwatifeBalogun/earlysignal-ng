@@ -1,0 +1,49 @@
+{% extends "core/base_app.html" %}{% load ui humanize %}
+{% block title %}Import records | EarlySignal NG{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Import records</h1><p>Bring in a whole class from a spreadsheet. New students are created as they appear. Existing students are matched on their student ID.</p></div></div>
+
+{% if result %}
+<section class="card" style="margin-bottom:18px" aria-labelledby="h-result">
+  <div class="card-head"><h2 id="h-result">Import finished</h2><p>{{ result.total|intcomma }} row{{ result.total|pluralize }} read</p></div>
+  <dl class="result-stats">
+    <div class="metric"><dt>Records imported</dt><dd>{{ result.imported|intcomma }}</dd></div>
+    <div class="metric"><dt>New students</dt><dd>{{ result.new_students|intcomma }}</dd></div>
+    <div class="metric"><dt>Predictions made</dt><dd>{{ result.predicted|intcomma }}</dd></div>
+    <div class="metric"><dt>Duplicates skipped</dt><dd>{{ result.duplicates|intcomma }}</dd></div>
+    <div class="metric"><dt>Rows rejected</dt><dd>{{ result.errors|length|intcomma }}</dd></div>
+  </dl>
+  {% if result.errors %}
+  <div class="banner banner-warn">{% icon "alert" %}<span>{{ result.errors|length }} row{{ result.errors|length|pluralize }} could not be imported. Fix {{ result.errors|length|pluralize:"it,them" }} in the spreadsheet and import the file again. Rows already imported will be skipped as duplicates.</span></div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th scope="col">Row</th><th scope="col">Student ID</th><th scope="col">What is wrong</th></tr></thead>
+    <tbody>{% for e in result.errors|slice:":50" %}<tr><td class="num">{{ e.line }}</td><td>{{ e.student_id|default:"(empty)" }}</td><td>{{ e.reason }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% if result.errors|length > 50 %}<p class="help" style="margin-top:10px">Showing the first 50.</p>{% endif %}
+  {% endif %}
+  <div class="form-actions"><a class="btn" href="{% url 'history' %}">View prediction history</a><a class="btn btn-ghost" href="{% url 'student_list' %}">View students</a></div>
+</section>
+{% endif %}
+
+<div class="grid grid-main">
+  <form class="card" method="post" enctype="multipart/form-data" novalidate data-busy>
+    {% csrf_token %}
+    <div class="form-grid">
+      {% include "core/_field.html" with field=form.file %}
+      <label class="check" for="{{ form.predict.id_for_label }}">{{ form.predict }}<span>{{ form.predict.label }}</span></label>
+    </div>
+    <div class="form-actions"><button class="btn" type="submit">{% icon "upload" 18 %}Import file</button></div>
+  </form>
+  <aside class="card">
+    <div class="card-head"><h2>File format</h2></div>
+    <p>A CSV file with one academic record per row and these columns, in any order:</p>
+    <div class="csv-cols">{% for c in columns %}<code>{{ c }}</code>{% endfor %}</div>
+    <ul class="advice" style="margin-top:16px">
+      <li>{% icon "tick" 18 %}<span><code>ca_score</code> and <code>attendance_rate</code> are percentages from 0 to 100.</span></li>
+      <li>{% icon "tick" 18 %}<span><code>previous_gpa</code> is on the institution's own scale: 4.00 for polytechnics, 5.00 for universities and colleges of education.</span></li>
+      <li>{% icon "tick" 18 %}<span>Rows with a missing or invalid figure are rejected and listed. Nothing is guessed.</span></li>
+    </ul>
+    <div class="form-actions"><a class="btn btn-ghost" href="{% url 'import_template' %}">{% icon "download" 18 %}Download the template</a></div>
+  </aside>
+</div>
+{% endblock %}

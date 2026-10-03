@@ -1,0 +1,10 @@
+{% extends "core/base_app.html" %}{% load ui %}
+{% block title %}Administrators only | EarlySignal NG{% endblock %}
+{% block content %}
+<div class="card empty">
+  <span class="empty-art">{% icon "lock" 26 %}</span>
+  <h3>This page is for administrators</h3>
+  <p>Your account has the lecturer role. Ask an administrator if a record needs correcting or an account needs changing.</p>
+  <a class="btn" href="{% url 'dashboard' %}">Go to the dashboard</a>
+</div>
+{% endblock %}

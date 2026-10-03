@@ -1,0 +1,44 @@
+{% extends "core/base_app.html" %}{% load ui humanize %}
+{% block title %}Prediction history | EarlySignal NG{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Prediction history</h1><p>{{ total|intcomma }} prediction{{ total|pluralize }}{% if filtered %} match your filters{% endif %}, newest first.</p></div>
+  <div class="page-actions"><a class="btn btn-ghost" href="{% url 'history_export' %}{% if querystring %}?{{ querystring }}{% endif %}">{% icon "download" 18 %}Export CSV</a></div>
+</div>
+<div class="card card-flush">
+  <form class="filters" method="get" style="--n:2" role="search">
+    <div class="field"><label for="q">Search</label><div class="search">{% icon "search" 18 %}<input class="input" id="q" type="search" name="q" value="{{ q }}" placeholder="Name, student ID or institution"></div></div>
+    <div class="field"><label for="risk">Risk band</label><select class="select" id="risk" name="risk"><option value="">All bands</option>{% for r in risks %}<option value="{{ r }}" {% if r == risk %}selected{% endif %}>{{ r }} risk</option>{% endfor %}</select></div>
+    <div class="field"><label for="zone">Zone</label><select class="select" id="zone" name="zone"><option value="">All zones</option>{% for z in zone_names %}<option {% if z == zone %}selected{% endif %}>{{ z }}</option>{% endfor %}</select></div>
+    <div class="filter-actions"><button class="btn" type="submit">Apply</button>{% if filtered %}<a class="btn btn-ghost" href="{% url 'history' %}">Clear</a>{% endif %}</div>
+  </form>
+  {% if page.object_list %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">Student</th><th scope="col">Semester</th><th scope="col" class="right">CA</th><th scope="col" class="right">Attend.</th><th scope="col" class="right">Prev. GPA</th><th scope="col">Risk</th><th scope="col" class="right">Chance</th><th scope="col">Predicted</th></tr></thead>
+      <tbody>
+        {% for p in page.object_list %}
+        <tr>
+          <td><a class="rowlink" href="{% url 'record_detail' p.record.pk %}">{{ p.record.student.full_name }}</a><span class="cell-sub">{{ p.record.student.institution }}</span></td>
+          <td>{{ p.record.session }}<span class="cell-sub">{{ p.record.get_semester_display }}</span></td>
+          <td class="right num">{{ p.record.ca_score|floatformat:"-1" }}%</td>
+          <td class="right num">{{ p.record.attendance_rate|floatformat:"-1" }}%</td>
+          <td class="right num">{{ p.record.previous_gpa }}</td>
+          <td>{% risk_badge p.risk_category %}</td>
+          <td class="right num"><strong>{{ p.percent }}%</strong></td>
+          <td>{{ p.date_generated|date:"j M Y" }}<span class="cell-sub">{{ p.requested_by.display_name|default:"" }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "core/_pagination.html" %}
+  {% else %}
+  <div class="empty">
+    <span class="empty-art">{% icon "history" 26 %}</span>
+    {% if filtered %}<h3>No prediction matches those filters</h3><p>Try a different band or zone, or clear the filters.</p><a class="btn btn-ghost" href="{% url 'history' %}">Clear filters</a>
+    {% else %}<h3>No predictions yet</h3><p>Open a student, enter an academic record and choose Save and predict.</p><a class="btn" href="{% url 'student_list' %}">Go to students</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

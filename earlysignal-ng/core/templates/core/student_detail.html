@@ -1,0 +1,71 @@
+{% extends "core/base_app.html" %}{% load ui %}
+{% block title %}{{ student.full_name }} | EarlySignal NG{% endblock %}
+{% block content %}
+<nav class="crumbs" aria-label="Breadcrumb"><a href="{% url 'student_list' %}">Students</a>{% icon "chevron" 14 %}<span>{{ student.full_name }}</span></nav>
+<div class="page-head">
+  <div class="profile">
+    <span class="avatar avatar-lg avatar-soft" aria-hidden="true">{{ student.full_name|slice:":1" }}</span>
+    <div>
+      <h1>{{ student.full_name }}</h1>
+      <div class="profile-meta">
+        <span class="pill">{{ student.student_id }}</span>
+        <span class="pill">{{ student.level }}, {{ student.department }}</span>
+        <span class="pill">{% icon "pin" 14 %}{{ student.state }}, {{ student.zone }}</span>
+      </div>
+    </div>
+  </div>
+  <div class="page-actions">
+    {% if user.is_administrator %}<a class="btn btn-ghost" href="{% url 'student_edit' student.pk %}">{% icon "edit" 18 %}Correct details</a>{% endif %}
+    <a class="btn" href="{% url 'record_create' student.pk %}">{% icon "plus" 18 %}Enter a record</a>
+  </div>
+</div>
+
+<div class="grid grid-main enter">
+  <section class="card card-flush" aria-labelledby="h-records">
+    <div class="card-head" style="padding-bottom:16px"><h2 id="h-records">Academic records</h2><p>{{ student.institution }} ({{ student.institution_type }}, GPA out of {{ student.gpa_scale|floatformat:2 }})</p></div>
+    {% if records %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th scope="col">Semester</th><th scope="col" class="right">CA</th><th scope="col" class="right">Attendance</th><th scope="col" class="right">Prev. GPA</th><th scope="col">Signal</th><th scope="col"><span class="sr-only">Open</span></th></tr></thead>
+        <tbody>
+          {% for r in records %}
+          <tr>
+            <td><a class="rowlink" href="{% url 'record_detail' r.pk %}">{{ r.session }}</a><span class="cell-sub">{{ r.get_semester_display }}, entered {{ r.created_at|date:"j M Y" }}</span></td>
+            <td class="right num">{{ r.ca_score|floatformat:"-1" }}%</td>
+            <td class="right num">{{ r.attendance_rate|floatformat:"-1" }}%</td>
+            <td class="right num">{{ r.previous_gpa }}</td>
+            <td>{% if r.has_prediction %}{% risk_badge r.prediction.risk_category %}{% else %}<span class="pill pill-off">Not predicted</span>{% endif %}</td>
+            <td class="right"><a class="btn btn-ghost btn-sm" href="{% url 'record_detail' r.pk %}">{% if r.has_prediction %}View{% else %}Predict{% endif %}</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty"><span class="empty-art">{% icon "file" 26 %}</span><h3>No academic record yet</h3><p>Enter this semester's CA score, attendance and the previous GPA to get a first prediction.</p><a class="btn" href="{% url 'record_create' student.pk %}">{% icon "plus" 18 %}Enter a record</a></div>
+    {% endif %}
+  </section>
+
+  <div class="stack">
+    <section class="card" aria-labelledby="h-now">
+      <div class="card-head"><h2 id="h-now">Current signal</h2></div>
+      {% if current %}
+        <p>{% risk_badge current.risk_category "lg" %}</p>
+        <p style="margin-top:12px"><strong class="num" style="font-family:var(--font-display);font-size:2.4rem;letter-spacing:-.03em">{{ current.percent }}%</strong> <span class="muted">chance of under-performing</span></p>
+        <p class="muted" style="margin-top:6px">{{ current.predicted_outcome }}, from the {{ current.record.session }} {{ current.record.semester|lower }} semester record.</p>
+      {% else %}<p class="muted">The latest record has no prediction yet.</p>{% endif %}
+    </section>
+    {% if points|length > 1 %}
+    <section class="card" aria-labelledby="h-trend">
+      <div class="card-head"><h2 id="h-trend">Signal over time</h2></div>
+      <svg class="sparkline" viewBox="0 0 300 96" role="img" aria-label="Chance of under-performing over time: {% for p in points %}{{ p.label }} {{ p.pct }} percent{% if not forloop.last %}, {% endif %}{% endfor %}">
+        {% if bands %}<line class="band" x1="12" x2="288" y1="{{ bands.high_y }}" y2="{{ bands.high_y }}"/><line class="band" x1="12" x2="288" y1="{{ bands.flag_y }}" y2="{{ bands.flag_y }}"/>{% endif %}
+        <polyline points="{{ polyline }}"/>
+        {% for p in points %}<circle class="pt-{{ p.risk|lower }}" cx="{{ p.x }}" cy="{{ p.y }}" r="5.5"/><text x="{{ p.x }}" y="90" text-anchor="middle">{{ p.pct }}%</text>{% endfor %}
+      </svg>
+      {% if bands %}<p class="help" style="margin-top:8px">Dashed lines mark the bands: low under {{ bands.flag_from }}%, high from {{ bands.high_from }}%.</p>{% endif %}
+    </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

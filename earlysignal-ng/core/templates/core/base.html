@@ -1,0 +1,20 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}EarlySignal NG{% endblock %}</title>
+<meta name="description" content="AI-based student performance prediction for Nigerian tertiary institutions.">
+<meta name="theme-color" content="#0A3323">
+<link rel="icon" href="{% static 'core/favicon.svg' %}" type="image/svg+xml">
+<link rel="preload" href="{% static 'core/fonts/bricolage-grotesque-latin-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="{% static 'core/fonts/instrument-sans-latin-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+<script>document.documentElement.classList.add("js")</script>
+<link rel="stylesheet" href="{% static 'core/css/app.css' %}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+<a class="skip" href="#main">Skip to main content</a>
+{% block body %}{% endblock %}
+<script src="{% static 'core/js/app.js' %}" defer></script>
+</body>
+</html>

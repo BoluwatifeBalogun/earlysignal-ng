@@ -1,0 +1,334 @@
+{
+  "version": "20261002-1900",
+  "trained_at": "2026-10-02T19:00:24.332824+00:00",
+  "sklearn_version": "1.8.0",
+  "data_file": "nigeria_student_records.csv",
+  "features": [
+    "ca_score",
+    "attendance_rate",
+    "previous_result"
+  ],
+  "data": {
+    "rows_raw": 6120,
+    "duplicates_removed": 120,
+    "missing_removed": 217,
+    "out_of_range_removed": 0,
+    "unknown_label_removed": 0,
+    "rows_used": 5783,
+    "under_perform": 1557,
+    "pass": 4226,
+    "under_perform_share": 0.2692,
+    "train_rows": 4626,
+    "test_rows": 1157
+  },
+  "models": {
+    "Random Forest": {
+      "test": {
+        "accuracy": 0.8868,
+        "precision": 0.7413,
+        "recall": 0.891,
+        "f1": 0.8093,
+        "roc_auc": 0.9613
+      },
+      "confusion": {
+        "tn": 748,
+        "fp": 97,
+        "fn": 34,
+        "tp": 278
+      },
+      "timing": {
+        "fit_seconds": 0.913,
+        "predict_ms": 17.6
+      },
+      "cv": {
+        "accuracy": {
+          "mean": 0.8941,
+          "std": 0.0109,
+          "folds": [
+            0.8974,
+            0.8951,
+            0.9059,
+            0.8735,
+            0.8984
+          ]
+        },
+        "precision": {
+          "mean": 0.766,
+          "std": 0.0284,
+          "folds": [
+            0.775,
+            0.7815,
+            0.7893,
+            0.7102,
+            0.7739
+          ]
+        },
+        "recall": {
+          "mean": 0.8763,
+          "std": 0.0165,
+          "folds": [
+            0.8715,
+            0.8474,
+            0.8876,
+            0.8956,
+            0.8795
+          ]
+        },
+        "f1": {
+          "mean": 0.8169,
+          "std": 0.0143,
+          "folds": [
+            0.8204,
+            0.8131,
+            0.8355,
+            0.7922,
+            0.8233
+          ]
+        },
+        "roc_auc": {
+          "mean": 0.962,
+          "std": 0.0022,
+          "folds": [
+            0.9617,
+            0.9635,
+            0.9642,
+            0.9581,
+            0.9628
+          ]
+        }
+      }
+    },
+    "Logistic Regression": {
+      "test": {
+        "accuracy": 0.8816,
+        "precision": 0.7297,
+        "recall": 0.891,
+        "f1": 0.8023,
+        "roc_auc": 0.9583
+      },
+      "confusion": {
+        "tn": 742,
+        "fp": 103,
+        "fn": 34,
+        "tp": 278
+      },
+      "timing": {
+        "fit_seconds": 0.008,
+        "predict_ms": 0.34
+      },
+      "cv": {
+        "accuracy": {
+          "mean": 0.8854,
+          "std": 0.014,
+          "folds": [
+            0.8855,
+            0.8962,
+            0.8919,
+            0.8584,
+            0.8951
+          ]
+        },
+        "precision": {
+          "mean": 0.7362,
+          "std": 0.0334,
+          "folds": [
+            0.7391,
+            0.7703,
+            0.7508,
+            0.6725,
+            0.7484
+          ]
+        },
+        "recall": {
+          "mean": 0.9004,
+          "std": 0.0186,
+          "folds": [
+            0.8876,
+            0.8755,
+            0.8956,
+            0.9237,
+            0.9197
+          ]
+        },
+        "f1": {
+          "mean": 0.8093,
+          "std": 0.0166,
+          "folds": [
+            0.8066,
+            0.8195,
+            0.8168,
+            0.7783,
+            0.8252
+          ]
+        },
+        "roc_auc": {
+          "mean": 0.9619,
+          "std": 0.0026,
+          "folds": [
+            0.9588,
+            0.9605,
+            0.9655,
+            0.9601,
+            0.9645
+          ]
+        }
+      }
+    }
+  },
+  "selected": "Random Forest",
+  "selection_reason": "Random Forest had the higher cross-validated F1 on under-performing students (0.817 against 0.809).",
+  "baseline": {
+    "accuracy": 0.7303,
+    "f1": 0.0
+  },
+  "comparison": {
+    "rf_only_correct": 26,
+    "lr_only_correct": 20,
+    "p_value": 0.4614,
+    "significant": false
+  },
+  "calibration": {
+    "method": "Platt scaling",
+    "a": 1.0932655101802422,
+    "b": -0.7237093484646145,
+    "brier_raw": 0.0769,
+    "brier_calibrated": 0.0689,
+    "flag_from": 0.3266,
+    "high_from": 0.5,
+    "reliability": [
+      {
+        "range": "0 to 5%",
+        "n": 611,
+        "predicted": 0.0082,
+        "observed": 0.0098
+      },
+      {
+        "range": "5 to 20%",
+        "n": 116,
+        "predicted": 0.1084,
+        "observed": 0.1552
+      },
+      {
+        "range": "20 to 35%",
+        "n": 68,
+        "predicted": 0.2691,
+        "observed": 0.1912
+      },
+      {
+        "range": "35 to 50%",
+        "n": 53,
+        "predicted": 0.4257,
+        "observed": 0.3585
+      },
+      {
+        "range": "50 to 70%",
+        "n": 72,
+        "predicted": 0.6142,
+        "observed": 0.5417
+      },
+      {
+        "range": "70 to 90%",
+        "n": 99,
+        "predicted": 0.796,
+        "observed": 0.8384
+      },
+      {
+        "range": "90 to 100%",
+        "n": 138,
+        "predicted": 0.9702,
+        "observed": 0.971
+      }
+    ],
+    "bands": [
+      {
+        "band": "Low",
+        "n": 782,
+        "share": 0.6759,
+        "observed": 0.0435
+      },
+      {
+        "band": "Medium",
+        "n": 66,
+        "share": 0.057,
+        "observed": 0.3333
+      },
+      {
+        "band": "High",
+        "n": 309,
+        "share": 0.2671,
+        "observed": 0.8285
+      }
+    ]
+  },
+  "feature_ranges": {
+    "ca_score": [
+      8.8,
+      100.0
+    ],
+    "attendance_rate": [
+      22.0,
+      100.0
+    ],
+    "previous_result": [
+      18.0,
+      98.0
+    ]
+  },
+  "importance": [
+    {
+      "feature": "ca_score",
+      "label": "Continuous assessment",
+      "share": 0.5994,
+      "drop_in_f1": 0.2455
+    },
+    {
+      "feature": "attendance_rate",
+      "label": "Attendance",
+      "share": 0.2613,
+      "drop_in_f1": 0.107
+    },
+    {
+      "feature": "previous_result",
+      "label": "Previous result",
+      "share": 0.1392,
+      "drop_in_f1": 0.057
+    }
+  ],
+  "hypothesis": {
+    "indicators": [
+      {
+        "feature": "ca_score",
+        "label": "Continuous assessment",
+        "r": -0.6468,
+        "p_value": 0.0,
+        "significant": true
+      },
+      {
+        "feature": "attendance_rate",
+        "label": "Attendance",
+        "r": -0.5465,
+        "p_value": 0.0,
+        "significant": true
+      },
+      {
+        "feature": "previous_result",
+        "label": "Previous result",
+        "r": -0.503,
+        "p_value": 0.0,
+        "significant": true
+      }
+    ],
+    "permutation": {
+      "score": 0.8973,
+      "shuffled_mean": 0.6055,
+      "p_value": 0.0323,
+      "n_permutations": 30
+    },
+    "reject_null": true
+  },
+  "feature_means": {
+    "ca_score": 57.17,
+    "attendance_rate": 78.08,
+    "previous_result": 56.86
+  }
+}

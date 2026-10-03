@@ -1,0 +1,44 @@
+{% extends "core/base.html" %}{% load ui %}
+{% block body_class %}app{% endblock %}
+{% block body %}
+<div class="shell">
+  <header class="topbar">
+    <a href="{% url 'dashboard' %}" class="topbar-logo" aria-label="EarlySignal NG dashboard">{% include "core/_logo.html" %}</a>
+    <button class="icon-btn" type="button" data-drawer-open aria-controls="sidebar" aria-expanded="false" aria-label="Open menu">{% icon "menu" 22 %}</button>
+  </header>
+  <div class="scrim" data-drawer-close hidden></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <a href="{% url 'dashboard' %}" aria-label="EarlySignal NG dashboard">{% include "core/_logo.html" %}</a>
+      <button class="icon-btn sidebar-close" type="button" data-drawer-close aria-label="Close menu">{% icon "close" 22 %}</button>
+    </div>
+    <nav class="nav" aria-label="Main">
+      <a class="nav-link {% active 'dashboard' %}" href="{% url 'dashboard' %}">{% icon "grid" %}<span>Dashboard</span></a>
+      <a class="nav-link {% active 'student_list' 'student_detail' 'student_create' 'student_edit' 'record_create' 'record_detail' 'record_edit' %}" href="{% url 'student_list' %}">{% icon "students" %}<span>Students</span></a>
+      <a class="nav-link {% active 'import_records' %}" href="{% url 'import_records' %}">{% icon "upload" %}<span>Import records</span></a>
+      <a class="nav-link {% active 'history' %}" href="{% url 'history' %}">{% icon "history" %}<span>Prediction history</span></a>
+      <a class="nav-link {% active 'model_report' %}" href="{% url 'model_report' %}">{% icon "chart" %}<span>Model performance</span></a>
+      {% if user.is_administrator %}
+      <p class="nav-group">Administration</p>
+      <a class="nav-link {% active 'user_list' 'user_edit' %}" href="{% url 'user_list' %}">{% icon "shield" %}<span>User accounts</span></a>
+      {% endif %}
+    </nav>
+    <div class="sidebar-foot">
+      <a class="me" href="{% url 'own_password' %}" title="Change your password">
+        <span class="avatar" aria-hidden="true">{{ user.initials }}</span>
+        <span class="me-text"><strong>{{ user.display_name }}</strong><small>{{ user.get_role_display }}</small></span>
+      </a>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}
+        <button class="nav-link nav-out" type="submit">{% icon "logout" %}<span>Sign out</span></button>
+      </form>
+    </div>
+  </aside>
+  <main class="main" id="main" tabindex="-1">
+    {% if not model_ready %}<div class="banner banner-warn" role="status">{% icon "alert" %}<span>No trained model was found, so predictions are switched off. Run <code>python manage.py train_model</code> on the server.</span></div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+<div class="toasts" aria-live="polite" aria-atomic="false">
+  {% for message in messages %}<div class="toast toast-{{ message.level_tag }}" role="status">{% if message.level_tag == 'error' %}{% icon "alert" %}{% else %}{% icon "check" %}{% endif %}<span>{{ message }}</span><button type="button" class="toast-x" aria-label="Dismiss">{% icon "close" 16 %}</button></div>{% endfor %}
+</div>
+{% endblock %}

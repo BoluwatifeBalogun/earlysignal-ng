@@ -1,0 +1,43 @@
+{% load ui %}<div class="predictor{% if fixed_scale %} predictor-wide{% endif %}" data-predictor data-url="{% url 'api_try' %}" data-scale="{{ scale }}" data-requirement="75">
+  <div class="stack" style="gap:14px">
+    {% if not fixed_scale %}
+    <fieldset class="segmented"><legend class="sr-only">Institution type and GPA scale</legend>
+      <label><input type="radio" name="demo-scale" value="4" checked><span>Polytechnic, 4.00</span></label>
+      <label><input type="radio" name="demo-scale" value="5"><span>University, 5.00</span></label>
+    </fieldset>
+    {% endif %}
+    <div class="slider">
+      <label for="{{ pid }}-ca">Continuous assessment</label><output data-out="ca" for="{{ pid }}-ca">{{ ca }}%</output>
+      <input id="{{ pid }}-ca" type="range" min="0" max="100" step="1" value="{{ ca }}" data-input="ca">
+    </div>
+    <div class="slider">
+      <label for="{{ pid }}-att">Attendance</label><output data-out="att" for="{{ pid }}-att">{{ att }}%</output>
+      <input id="{{ pid }}-att" type="range" min="0" max="100" step="1" value="{{ att }}" data-input="att">
+      <p class="slider-note" data-out="att-note" hidden>Below the 75% usually required to sit an exam.</p>
+    </div>
+    <div class="slider">
+      <label for="{{ pid }}-gpa">Previous GPA</label><output data-out="gpa" for="{{ pid }}-gpa">{{ gpa }}</output>
+      <input id="{{ pid }}-gpa" type="range" min="0" max="{{ scale }}" step="0.05" value="{{ gpa }}" data-input="gpa">
+    </div>
+  </div>
+  <div class="stack" style="gap:16px">
+    <div class="readout" data-risk="low">
+      <div class="readout-row">
+        <div>
+          <p class="readout-label">Chance of under-performing</p>
+          <p class="readout-num num"><span data-out="percent">0</span><small>%</small></p>
+        </div>
+        <span class="badge badge-low" data-out="badge">{% icon "check" 14 %}<span>Low risk</span></span>
+      </div>
+      <p class="readout-outcome" data-out="outcome" aria-live="polite">Reading the model.</p>
+    </div>
+    <p class="predictor-error" data-out="error" role="alert" hidden></p>
+    <p class="slider-note" data-out="caution" hidden></p>
+    <ul class="factors" aria-label="What is driving this estimate">
+      <li class="factor neutral" data-factor="ca_score"><div class="factor-top"><strong>Continuous assessment</strong><em>&nbsp;</em></div><div class="factor-track"><span class="factor-bar"></span></div></li>
+      <li class="factor neutral" data-factor="attendance_rate"><div class="factor-top"><strong>Attendance</strong><em>&nbsp;</em></div><div class="factor-track"><span class="factor-bar"></span></div></li>
+      <li class="factor neutral" data-factor="previous_result"><div class="factor-top"><strong>Previous result</strong><em>&nbsp;</em></div><div class="factor-track"><span class="factor-bar"></span></div></li>
+    </ul>
+    {% if fixed_scale %}<div><button type="button" class="btn btn-ghost btn-sm" data-reset>{% icon "refresh" 16 %}Reset to the recorded values</button></div>{% endif %}
+  </div>
+</div>

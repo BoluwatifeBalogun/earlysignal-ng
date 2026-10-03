@@ -1,0 +1,121 @@
+{% extends "core/base_app.html" %}{% load ui humanize %}
+{% block title %}Dashboard | EarlySignal NG{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{% if zone_filter %}{{ zone_filter }}{% else %}Nigeria at a glance{% endif %}</h1>
+    <p>Each student's most recent signal{% if zone_filter %} in the {{ zone_filter }} zone{% else %}, across all six geopolitical zones{% endif %}.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-ghost" href="{% url 'import_records' %}">{% icon "upload" 18 %}Import records</a>
+    <a class="btn" href="{% url 'student_create' %}">{% icon "plus" 18 %}Add a student</a>
+  </div>
+</div>
+
+<nav class="chips" aria-label="Filter by zone" style="margin-bottom:20px">
+  <a class="chip {% if not zone_filter %}is-on{% endif %}" href="{% url 'dashboard' %}" {% if not zone_filter %}aria-current="true"{% endif %}>All zones</a>
+  {% for z in zone_names %}<a class="chip {% if zone_filter == z %}is-on{% endif %}" href="?zone={{ z|urlencode }}" {% if zone_filter == z %}aria-current="true"{% endif %}>{{ z }}</a>{% endfor %}
+</nav>
+
+{% if not student_count %}
+<div class="card empty">
+  <span class="empty-art">{% icon "students" 26 %}</span>
+  <h3>No students {% if zone_filter %}in this zone {% endif %}yet</h3>
+  <p>Add a student and enter their first academic record, or import a class list.</p>
+  <a class="btn" href="{% url 'student_create' %}">{% icon "plus" 18 %}Add a student</a>
+</div>
+{% else %}
+<div class="grid grid-4 enter" style="margin-bottom:18px">
+  <div class="card kpi kpi-hero">
+    <span class="kpi-label">{% icon "alert" 18 %}Students at high risk</span>
+    <span class="kpi-value" data-ticker="{{ high_count }}">{{ high_count }}</span>
+    <span class="kpi-note">{{ high_pct }}% of students with a prediction</span>
+  </div>
+  <div class="card kpi">
+    <span class="kpi-label">{% icon "students" 18 %}Students</span>
+    <span class="kpi-value" data-ticker="{{ student_count }}">{{ student_count }}</span>
+    <span class="kpi-note">{{ prediction_total }} with a current signal</span>
+  </div>
+  <div class="card kpi">
+    <span class="kpi-label">{% icon "file" 18 %}Academic records</span>
+    <span class="kpi-value" data-ticker="{{ record_count }}">{{ record_count }}</span>
+    <span class="kpi-note">CA, attendance and previous GPA</span>
+  </div>
+  <div class="card kpi">
+    <span class="kpi-label">{% icon "watch" 18 %}Awaiting prediction</span>
+    <span class="kpi-value" data-ticker="{{ awaiting }}">{{ awaiting }}</span>
+    <span class="kpi-note">{% if awaiting %}Open a record to request one{% else %}Every record has a prediction{% endif %}</span>
+  </div>
+</div>
+
+<div class="grid grid-main enter">
+  <div class="stack">
+    <section class="card" aria-labelledby="h-risk">
+      <div class="card-head"><h2 id="h-risk">Risk across {{ prediction_total }} students</h2></div>
+      {% if prediction_total %}
+      <div class="riskbar" role="img" aria-label="{% for r in risk %}{{ r.name }} risk {{ r.count }} students, {{ r.pct }} percent. {% endfor %}">
+        {% for r in risk %}{% if r.count %}<span class="seg-{{ r.name|lower }}" style="width:{{ r.pct }}%"></span>{% endif %}{% endfor %}
+      </div>
+      <div class="legend">
+        {% for r in risk %}<a class="legend-item" href="{% url 'history' %}?risk={{ r.name }}{% if zone_filter %}&amp;zone={{ zone_filter|urlencode }}{% endif %}" style="text-decoration:none;color:inherit"><span class="dot dot-{{ r.name|lower }}"></span>{{ r.name }} risk <strong>{{ r.count }}</strong> <span class="muted">({{ r.pct }}%)</span></a>{% endfor %}
+      </div>
+      {% else %}<p class="muted">No predictions yet. Open a student's record and request one.</p>{% endif %}
+    </section>
+
+    <section class="card" aria-labelledby="h-zone">
+      <div class="card-head"><h2 id="h-zone">By geopolitical zone</h2><p>Share of students in each risk band</p></div>
+      <div class="rows">
+        {% for z in zone_rows %}
+        <div class="row-line">
+          <div class="row-top"><a href="?zone={{ z.name|urlencode }}">{{ z.name }}</a><span>{% if z.total %}{{ z.high }} high, {{ z.medium }} medium, {{ z.low }} low{% else %}No predictions{% endif %}</span></div>
+          <div class="riskbar" aria-hidden="true">{% if z.high %}<span class="seg-high" style="width:{{ z.high_pct }}%"></span>{% endif %}{% if z.medium %}<span class="seg-medium" style="width:{{ z.medium_pct }}%"></span>{% endif %}{% if z.low %}<span class="seg-low" style="width:{{ z.low_pct }}%"></span>{% endif %}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="h-type">
+      <div class="card-head"><h2 id="h-type">By institution type</h2></div>
+      <div class="rows">
+        {% for z in type_rows %}
+        <div class="row-line">
+          <div class="row-top"><strong>{{ z.name }}</strong><span>{% if z.total %}{{ z.high }} high, {{ z.medium }} medium, {{ z.low }} low{% else %}No predictions{% endif %}</span></div>
+          <div class="riskbar" aria-hidden="true">{% if z.high %}<span class="seg-high" style="width:{{ z.high_pct }}%"></span>{% endif %}{% if z.medium %}<span class="seg-medium" style="width:{{ z.medium_pct }}%"></span>{% endif %}{% if z.low %}<span class="seg-low" style="width:{{ z.low_pct }}%"></span>{% endif %}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card" aria-labelledby="h-watch">
+      <div class="card-head"><h2 id="h-watch">Needs attention first</h2><a href="{% url 'history' %}?risk=High{% if zone_filter %}&amp;zone={{ zone_filter|urlencode }}{% endif %}">View all</a></div>
+      {% if watchlist %}
+      <ul class="list">
+        {% for p in watchlist %}
+        <li>
+          <span><a href="{% url 'record_detail' p.record.pk %}">{{ p.record.student.full_name }}</a><small>{{ p.record.student.institution }}</small></span>
+          <span class="badge badge-high">{% icon "alert" 14 %}<span class="num">{{ p.percent }}%</span></span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="muted">No student is in the high risk band right now.</p>{% endif %}
+    </section>
+
+    <section class="card" aria-labelledby="h-recent">
+      <div class="card-head"><h2 id="h-recent">Latest predictions</h2><a href="{% url 'history' %}">History</a></div>
+      {% if recent %}
+      <ul class="list">
+        {% for p in recent %}
+        <li>
+          <span><a href="{% url 'record_detail' p.record.pk %}">{{ p.record.student.full_name }}</a><small>{{ p.date_generated|date:"j M Y" }}, {{ p.record.session }} {{ p.record.semester|lower }} semester</small></span>
+          {% risk_badge p.risk_category %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="muted">Predictions will appear here as they are generated.</p>{% endif %}
+    </section>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

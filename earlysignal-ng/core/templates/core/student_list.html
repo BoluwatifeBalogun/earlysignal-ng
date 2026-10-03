@@ -1,0 +1,44 @@
+{% extends "core/base_app.html" %}{% load ui humanize %}
+{% block title %}Students | EarlySignal NG{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Students</h1><p>{{ total|intcomma }} student{{ total|pluralize }}{% if filtered %} match your filters{% endif %}.</p></div>
+  <div class="page-actions">
+    <a class="btn btn-ghost" href="{% url 'import_records' %}">{% icon "upload" 18 %}Import records</a>
+    <a class="btn" href="{% url 'student_create' %}">{% icon "plus" 18 %}Add a student</a>
+  </div>
+</div>
+<div class="card card-flush">
+  <form class="filters" method="get" style="--n:2" role="search">
+    <div class="field"><label for="q">Search</label><div class="search">{% icon "search" 18 %}<input class="input" id="q" type="search" name="q" value="{{ q }}" placeholder="Name, student ID, institution or department"></div></div>
+    <div class="field"><label for="zone">Zone</label><select class="select" id="zone" name="zone"><option value="">All zones</option>{% for z in zone_names %}<option {% if z == zone %}selected{% endif %}>{{ z }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="type">Institution type</label><select class="select" id="type" name="type"><option value="">All types</option>{% for t in types %}<option {% if t == type %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+    <div class="filter-actions"><button class="btn" type="submit">Apply</button>{% if filtered %}<a class="btn btn-ghost" href="{% url 'student_list' %}">Clear</a>{% endif %}</div>
+  </form>
+  {% if page.object_list %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">Student</th><th scope="col">Institution</th><th scope="col">Level</th><th scope="col" class="right">Records</th><th scope="col">Current signal</th></tr></thead>
+      <tbody>
+        {% for s in page.object_list %}
+        <tr>
+          <td><div class="who"><span class="avatar avatar-soft" aria-hidden="true">{{ s.full_name|slice:":1" }}</span><span><a class="rowlink" href="{% url 'student_detail' s.pk %}">{{ s.full_name }}</a><span class="cell-sub">{{ s.student_id }}</span></span></div></td>
+          <td>{{ s.institution }}<span class="cell-sub">{{ s.state }}, {{ s.zone }}</span></td>
+          <td>{{ s.level }}<span class="cell-sub">{{ s.department }}</span></td>
+          <td class="right num">{{ s.n_records }}</td>
+          <td>{% if s.signal %}{% risk_badge s.signal.risk_category %}{% else %}<span class="pill pill-off">No prediction</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "core/_pagination.html" %}
+  {% else %}
+  <div class="empty">
+    <span class="empty-art">{% icon "search" 26 %}</span>
+    {% if filtered %}<h3>No student matches those filters</h3><p>Check the spelling, or clear the filters to see everyone.</p><a class="btn btn-ghost" href="{% url 'student_list' %}">Clear filters</a>
+    {% else %}<h3>No students yet</h3><p>Add the first student, or import a class list from CSV.</p><a class="btn" href="{% url 'student_create' %}">{% icon "plus" 18 %}Add a student</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

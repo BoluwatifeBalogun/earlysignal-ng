@@ -1,0 +1,38 @@
+{% extends "core/base_app.html" %}{% load ui %}
+{% block title %}{{ title }} | EarlySignal NG{% endblock %}
+{% block content %}
+<nav class="crumbs" aria-label="Breadcrumb"><a href="{% url 'student_list' %}">Students</a>{% icon "chevron" 14 %}<a href="{% url 'student_detail' student.pk %}">{{ student.full_name }}</a>{% icon "chevron" 14 %}<span>{{ title }}</span></nav>
+<div class="page-head"><div><h1>{{ title }}</h1><p>{{ student.full_name }}, {{ student.level }}, {{ student.institution }}.</p></div></div>
+<div class="grid grid-main">
+  <form class="card" method="post" novalidate data-busy>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-errors" role="alert">{% icon "alert" %}<span>{{ form.non_field_errors.0 }}</span></div>{% endif %}
+    <div class="form-grid cols-2">
+      {% include "core/_field.html" with field=form.session %}
+      {% include "core/_field.html" with field=form.semester %}
+      {% include "core/_field.html" with field=form.ca_score %}
+      {% include "core/_field.html" with field=form.attendance_rate %}
+      <div class="span-2">{% include "core/_field.html" with field=form.previous_gpa %}</div>
+    </div>
+    <div class="form-actions">
+      {% if record %}
+        <button class="btn" type="submit">Save correction</button>
+      {% else %}
+        <button class="btn" type="submit" name="predict" value="1">{% icon "spark" 18 %}Save and predict</button>
+        <button class="btn btn-ghost" type="submit">Save without predicting</button>
+      {% endif %}
+      <a class="btn btn-ghost" href="{% if record %}{% url 'record_detail' record.pk %}{% else %}{% url 'student_detail' student.pk %}{% endif %}">Cancel</a>
+    </div>
+  </form>
+  <aside class="card">
+    <div class="card-head"><h2>What the model reads</h2></div>
+    <ol class="steps-mini">
+      <li><span><strong>CA score.</strong> Tests, assignments and practicals so far, as a share of the marks available.</span></li>
+      <li><span><strong>Attendance.</strong> Classes attended out of classes held. Below {{ requirement }}% a student is usually barred from the exam.</span></li>
+      <li><span><strong>Previous GPA.</strong> Last completed semester, out of {{ student.gpa_scale|floatformat:2 }} for a {{ student.institution_type|lower }}.</span></li>
+    </ol>
+    <p class="help" style="margin-top:16px">Leave nothing blank. The model was trained only on complete records, so it does not guess missing figures.</p>
+    {% if record and record.has_prediction %}<div class="banner banner-info" style="margin:16px 0 0">{% icon "info" %}<span>Saving a correction refreshes this record's prediction.</span></div>{% endif %}
+  </aside>
+</div>
+{% endblock %}

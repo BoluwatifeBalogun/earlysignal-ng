@@ -1,0 +1,117 @@
+{% extends "core/base_app.html" %}{% load ui humanize %}
+{% block title %}Model performance | EarlySignal NG{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Model performance</h1><p>How the deployed model was trained, tested and chosen. Every figure on this page comes from records the model did not see during training.</p></div>
+</div>
+{% if not metrics %}
+<div class="card empty"><span class="empty-art">{% icon "chart" 26 %}</span><h3>No model has been trained yet</h3><p>Run <code>python manage.py train_model</code> on the server{% if user.is_administrator %}, or use the retrain form below{% endif %}.</p></div>
+{% else %}
+<div class="stack enter">
+  <section class="verdict" aria-label="Deployed model">
+    {% icon "shield" 22 %}
+    <div><strong>{{ metrics.selected }} is deployed</strong> <span class="pill" style="margin-left:6px">version {{ metrics.version }}</span>
+    <p>{{ metrics.selection_reason }} Guessing "pass" for everyone would score {{ metrics.baseline_pct }}% accuracy and catch no one.</p>
+    {% if metrics.comparison %}<p style="margin-top:6px">{% if metrics.comparison.significant %}The gap between the two models is statistically significant{% else %}The gap between the two models is small and not statistically significant{% endif %}: on the test records Random Forest alone was right {{ metrics.comparison.rf_only_correct }} times and Logistic Regression alone {{ metrics.comparison.lr_only_correct }} times (McNemar exact test, p = {{ metrics.comparison.p_value }}).</p>{% endif %}</div>
+  </section>
+
+  <div class="grid grid-2">
+    {% for m in models %}
+    <section class="card" aria-labelledby="h-m{{ forloop.counter }}">
+      <div class="card-head"><h2 id="h-m{{ forloop.counter }}">{{ m.name }}</h2>{% if m.selected %}<span class="pill pill-solid">{% icon "tick" 14 %}Deployed</span>{% else %}<span class="pill">Baseline</span>{% endif %}</div>
+      <dl class="metric-grid">
+        {% for key, label in metric_names %}
+        <div class="metric"><dt>{{ label }}</dt><dd>{% for k, v in m.test.items %}{% if k == key %}{{ v }}%{% endif %}{% endfor %}<small>5-fold: {% for k, v in m.cv.items %}{% if k == key %}{{ v.mean }} &plusmn; {{ v.std }}{% endif %}{% endfor %}</small></dd></div>
+        {% endfor %}
+      </dl>
+      {% if m.timing %}<p class="help" style="margin-top:12px">Cost to run: {{ m.timing.fit_seconds }} s to train, {{ m.timing.predict_ms }} ms for one prediction.</p>{% endif %}
+      <h3 style="font-size:1rem;margin:20px 0 10px">Confusion matrix, {{ metrics.data.test_rows|intcomma }} test records</h3>
+      <div class="matrix">
+        {% for c in m.cells %}<div class="matrix-cell {% if c.good %}good{% else %}bad{% endif %}"><strong>{{ c.n|intcomma }}</strong><span>{{ c.label }}</span><small>{{ c.pct }}% of test records</small></div>{% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+
+
+  {% if metrics.calibration %}
+  <div class="grid grid-2">
+    <section class="card" aria-labelledby="h-bands">
+      <div class="card-head"><h2 id="h-bands">What each risk band meant in the test</h2></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th scope="col">Band</th><th scope="col">Chance</th><th scope="col" class="right">Students</th><th scope="col" class="right">Failed</th></tr></thead>
+        <tbody>{% for b in metrics.calibration.bands %}<tr><td>{% risk_badge b.band %}</td><td>{% if b.band == "Low" %}Under {{ metrics.calibration.flag_pct }}%{% elif b.band == "Medium" %}{{ metrics.calibration.flag_pct }} to {{ metrics.calibration.high_pct }}%{% else %}{{ metrics.calibration.high_pct }}% or more{% endif %}</td><td class="right num">{{ b.n|intcomma }}</td><td class="right num">{% if b.observed_pct is not None %}{{ b.observed_pct }}%{% endif %}</td></tr>{% endfor %}</tbody>
+      </table></div>
+      <p class="help" style="margin-top:12px">"Failed" is the share of test students in the band who went on to under-perform. Medium and high together are the students the model flags as at risk, which is the decision the precision and recall figures describe.</p>
+    </section>
+    <section class="card" aria-labelledby="h-cal">
+      <div class="card-head"><h2 id="h-cal">Is the chance honest?</h2><p>{{ metrics.calibration.method }}</p></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th scope="col">Chance shown</th><th scope="col" class="right">Students</th><th scope="col" class="right">Average</th><th scope="col" class="right">Actual</th></tr></thead>
+        <tbody>{% for r in metrics.calibration.reliability %}<tr><td>{{ r.range }}</td><td class="right num">{{ r.n|intcomma }}</td><td class="right num">{{ r.predicted_pct }}%</td><td class="right num">{{ r.observed_pct }}%</td></tr>{% endfor %}</tbody>
+      </table></div>
+      <p class="help" style="margin-top:12px">Both models weight the under-performing minority more heavily, which inflates the raw score. Calibration corrects that, so the average chance shown should sit close to the share who actually under-performed. Brier score (lower is better): {{ metrics.calibration.brier_raw }} before, {{ metrics.calibration.brier_calibrated }} after.</p>
+    </section>
+  </div>
+  {% endif %}
+  <div class="grid grid-2">
+    <section class="card" aria-labelledby="h-imp">
+      <div class="card-head"><h2 id="h-imp">Which indicators matter</h2><p>Share of the model's skill lost when each one is scrambled</p></div>
+      <div class="compare">
+        {% for i in metrics.importance %}<div class="compare-row" style="grid-template-columns:150px 1fr 48px"><span>{{ i.label }}</span><div class="compare-bar"><span style="--v:{{ i.pct }}"></span></div><b>{{ i.pct }}%</b></div>{% endfor %}
+      </div>
+    </section>
+    <section class="card" aria-labelledby="h-hyp">
+      <div class="card-head"><h2 id="h-hyp">Hypothesis test</h2></div>
+      <p><strong>H0:</strong> the three indicators have no significant relationship with performance.</p>
+      <div class="table-wrap" style="margin:14px 0"><table class="table">
+        <thead><tr><th scope="col">Indicator</th><th scope="col" class="right">Correlation (r)</th><th scope="col" class="right">p-value</th></tr></thead>
+        <tbody>{% for t in metrics.hypothesis.indicators %}<tr><td>{{ t.label }}</td><td class="right num">{{ t.r|floatformat:3 }}</td><td class="right num">{{ t.p_text }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+      <p class="help">Point-biserial correlation between each indicator and under-performing. A negative value means higher figures go with lower risk. In the permutation test a lighter copy of the deployed model, cross-validated on 1,500 training records, scored {{ metrics.hypothesis.permutation.score_pct }}% on real labels against {{ metrics.hypothesis.permutation.shuffled_pct }}% on shuffled ones (p = {{ metrics.hypothesis.permutation.p_value }}, {{ metrics.hypothesis.permutation.n_permutations }} shuffles).</p>
+      <div class="banner banner-info" style="margin:14px 0 0">{% icon "check" %}<span>{% if metrics.hypothesis.reject_null %}<strong>H0 is rejected.</strong> The indicators carry a statistically significant relationship with academic performance, which supports H1.{% else %}<strong>H0 is not rejected</strong> on this dataset.{% endif %}</span></div>
+    </section>
+  </div>
+
+  <div class="grid grid-2">
+    <section class="card" aria-labelledby="h-data">
+      <div class="card-head"><h2 id="h-data">Training data</h2><p>{{ metrics.data_file }}</p></div>
+      <dl class="facts">
+        <div><dt>Rows in file</dt><dd>{{ metrics.data.rows_raw|intcomma }}</dd></div>
+        <div><dt>Duplicates removed</dt><dd>{{ metrics.data.duplicates_removed|intcomma }}</dd></div>
+        <div><dt>Incomplete, excluded</dt><dd>{{ metrics.data.missing_removed|intcomma }}</dd></div>
+        <div><dt>Records used</dt><dd>{{ metrics.data.rows_used|intcomma }}</dd></div>
+        <div><dt>Train / test</dt><dd>{{ metrics.data.train_rows|intcomma }} / {{ metrics.data.test_rows|intcomma }}</dd></div>
+        <div><dt>Under-performed</dt><dd>{{ metrics.data.under_pct }}%</dd></div>
+      </dl>
+      <div class="banner banner-warn" style="margin:16px 0 0">{% icon "info" %}<span>The bundled dataset is synthetic. It was generated to follow Nigerian assessment rules, not collected from any institution. Retrain on real, anonymised records before relying on these figures.</span></div>
+    </section>
+    <section class="card" aria-labelledby="h-method">
+      <div class="card-head"><h2 id="h-method">Method</h2></div>
+      <ol class="steps-mini">
+        <li><span>Duplicates are removed. Records missing any indicator are excluded, never estimated.</span></li>
+        <li><span>Names are dropped. Only CA score, attendance and the previous result (as a percentage of its GPA scale) reach the model.</span></li>
+        <li><span>The data is split 80/20, keeping the same share of under-performing students in both parts.</span></li>
+        <li><span>Both models weight the under-performing minority more heavily, so they are not rewarded for ignoring it.</span></li>
+        <li><span>5-fold cross-validation on the training part checks that the scores hold across different splits.</span></li>
+        <li><span>The model with the better F1-score is deployed. On a near tie the simpler Logistic Regression is kept.</span></li>
+        <li><span>The deployed model's score is calibrated, so the chance shown to a lecturer matches how often students with that score really under-performed.</span></li>
+      </ol>
+
+    </section>
+  </div>
+{% endif %}
+
+  {% if user.is_administrator %}
+  <section class="card" aria-labelledby="h-retrain">
+    <div class="card-head"><h2 id="h-retrain">Retrain the model</h2><p>Administrators only</p></div>
+    <form method="post" action="{% url 'model_retrain' %}" enctype="multipart/form-data" data-busy style="max-width:640px">
+      {% csrf_token %}
+      {% include "core/_field.html" with field=form.file %}
+      <div class="form-actions"><button class="btn" type="submit">{% icon "refresh" 18 %}Retrain now</button></div>
+      <p class="help" style="margin-top:10px">Training takes up to a minute. Both models are trained again and compared. Predictions already in the history keep the version they were made with.</p>
+    </form>
+  </section>
+  {% endif %}
+{% if metrics %}</div>{% endif %}
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "core/base.html" %}{% load ui %}
+{% block title %}Sign in | EarlySignal NG{% endblock %}
+{% block body %}
+<div class="auth">
+  <aside class="auth-side">
+    <a href="{% url 'landing' %}">{% include "core/_logo.html" %}</a>
+    <div class="auth-quote">
+      <h2>Three figures. One early signal.</h2>
+      <p>Continuous assessment, attendance and the previous result, read together, while there is still time in the semester to do something about them.</p>
+    </div>
+  </aside>
+  <main class="auth-main" id="main">
+    <div class="auth-box enter">
+      <a href="{% url 'landing' %}" class="btn btn-ghost btn-sm">{% icon "back" 16 %}Back to home</a>
+      <h1>Sign in</h1>
+      <p>Use the account your administrator gave you.</p>
+      <form method="post" novalidate data-busy>
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-errors" role="alert">{% icon "alert" %}<span>{{ form.non_field_errors.0 }}</span></div>{% endif %}
+        <div class="form-grid">
+          {% include "core/_field.html" with field=form.username %}
+          {% include "core/_field.html" with field=form.password %}
+        </div>
+        <input type="hidden" name="next" value="{{ next }}">
+        <div class="form-actions"><button class="btn btn-lg btn-block" type="submit">Sign in</button></div>
+      </form>
+      {% if show_demo %}
+      <div class="demo-box">
+        <strong>Demo accounts</strong>
+        <div class="demo-row"><span>Administrator: <code>admin</code> / <code>Admin@2026</code></span><button type="button" class="link-btn" data-fill="admin" data-pass="Admin@2026">Fill in</button></div>
+        <div class="demo-row"><span>Lecturer: <code>lecturer</code> / <code>Lecturer@2026</code></span><button type="button" class="link-btn" data-fill="lecturer" data-pass="Lecturer@2026">Fill in</button></div>
+      </div>
+      {% endif %}
+    </div>
+  </main>
+</div>
+{% endblock %}
